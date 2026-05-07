@@ -3,9 +3,7 @@ import type { Region } from "wavesurfer.js/dist/plugins/regions.esm.js";
 const DEFAULT_HANDLE_COLOR = "#ef4444";
 
 export const createSubtitleRegionContent = (
-  startTime: string,
-  text: string,
-  endTime: string,
+  id: number,
   opts?: { theme?: "light" | "dark" },
 ): HTMLElement => {
   const headerColor = opts?.theme === "dark" ? "white" : "black";
@@ -26,15 +24,7 @@ export const createSubtitleRegionContent = (
                 padding-right: 1rem;
                 padding-top: 0.3rem;
                 color: ${headerColor};">
-      <em>${startTime}</em>
-      <em>${endTime}</em>
-    </div>
-    <div style="padding-left: 1rem;
-                padding-right: 1rem;
-                padding-bottom: 1rem;
-                font-size: 1rem;
-                color: var(--color-foreground, #262626);">
-      <span>${text}</span>
+      <strong>${id}</strong>
     </div>
 `;
 

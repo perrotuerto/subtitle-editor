@@ -93,9 +93,7 @@ export const useWaveformRegions = ({
         const end = timeToSeconds(subtitle.endTime);
 
         const content = createSubtitleRegionContent(
-          subtitle.startTime,
-          subtitle.text,
-          subtitle.endTime,
+          subtitle.id,
           { theme },
         );
 
@@ -198,9 +196,7 @@ export const useWaveformRegions = ({
         entry.region.setOptions({ start: nextStart, end: nextEnd });
         entry.region.setOptions({
           content: createSubtitleRegionContent(
-            subtitle.startTime,
-            subtitle.text,
-            subtitle.endTime,
+            subtitle.id,
             { theme },
           ),
         });
@@ -306,9 +302,7 @@ export const useWaveformRegions = ({
           });
           region.setOptions({
             content: createSubtitleRegionContent(
-              originalSubtitle.startTime,
-              originalSubtitle.text,
-              originalSubtitle.endTime,
+              originalSubtitle.id,
               { theme },
             ),
           });
@@ -369,9 +363,7 @@ export const useWaveformRegions = ({
       if (subtitle) {
         region.setOptions({
           content: createSubtitleRegionContent(
-            newStartTimeFormatted,
-            subtitle.text,
-            newEndTimeFormatted,
+            subtitle.id,
             { theme },
           ),
         });
@@ -511,9 +503,7 @@ export const useWaveformRegions = ({
           const start = timeToSeconds(subtitle.startTime);
           const end = timeToSeconds(subtitle.endTime);
           const content = createSubtitleRegionContent(
-            subtitle.startTime,
-            subtitle.text,
-            subtitle.endTime,
+            subtitle.id,
             { theme },
           );
 
@@ -559,9 +549,7 @@ export const useWaveformRegions = ({
 
           region.setOptions({
             content: createSubtitleRegionContent(
-              subtitle.startTime,
-              subtitle.text,
-              subtitle.endTime,
+              subtitle.id,
               { theme },
             ),
           });
