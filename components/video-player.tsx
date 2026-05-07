@@ -6,7 +6,7 @@ import {
   type BrowserMediaSupport,
   type MediaFormatSupport,
 } from "@/lib/media-support";
-import { subtitlesToVttString } from "@/lib/utils";
+import { timeToSeconds } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import {
   Fragment,
@@ -59,15 +59,17 @@ const VideoPlayer = forwardRef(function VideoPlayer(
   const subtitles = useSubtitles();
 
   const [mediaUrl, setMediaUrl] = useState<string>("");
-  const [vttUrl, setVttUrl] = useState<string | null>(null);
   const [browserMediaSupport, setBrowserMediaSupport] =
     useState<BrowserMediaSupport | null>(null);
   const playerRef = useRef<HTMLVideoElement | null>(null);
-  const vttObjectUrlRef = useRef<string | null>(null);
-  const timeToRestore = useRef<number | null>(null); // Ref to store time before remount
+  const textTrackRef = useRef<TextTrack | null>(null);
+  const timeToRestore = useRef<number | null>(null);
 
   const setVideoRef = useCallback((element: HTMLVideoElement | null) => {
     playerRef.current = element;
+    if (!element) {
+      textTrackRef.current = null;
+    }
   }, []);
 
   useEffect(() => {
@@ -175,36 +177,33 @@ const VideoPlayer = forwardRef(function VideoPlayer(
   }, [mediaFile]);
 
   useEffect(() => {
-    if (!mediaUrl) {
-      setVttUrl(null);
-      if (vttObjectUrlRef.current) {
-        URL.revokeObjectURL(vttObjectUrlRef.current);
-        vttObjectUrlRef.current = null;
+    const video = playerRef.current;
+    if (!video || !mediaUrl) return;
+
+    if (!textTrackRef.current) {
+      textTrackRef.current = video.addTextTrack("subtitles", "subtitles", "unknown");
+    }
+
+    const track = textTrackRef.current;
+
+    if (track.cues) {
+      Array.from(track.cues).forEach((cue) => track.removeCue(cue));
+    }
+
+    track.mode = "showing";
+
+    subtitles.forEach((sub) => {
+      try {
+        const start = timeToSeconds(sub.startTime);
+        const end = timeToSeconds(sub.endTime);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) return;
+        const cue = new VTTCue(start, end, sub.text);
+        cue.id = String(sub.id);
+        track.addCue(cue);
+      } catch {
+        // Skip cues with invalid timing
       }
-      return;
-    }
-
-    const vttString = subtitlesToVttString(subtitles);
-    const blob = new Blob([vttString], { type: "text/vtt" });
-    const objectUrl = URL.createObjectURL(blob);
-
-    if (playerRef.current) {
-      timeToRestore.current = playerRef.current.currentTime ?? null;
-    }
-
-    if (vttObjectUrlRef.current) {
-      URL.revokeObjectURL(vttObjectUrlRef.current);
-    }
-
-    vttObjectUrlRef.current = objectUrl;
-    setVttUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-      if (vttObjectUrlRef.current === objectUrl) {
-        vttObjectUrlRef.current = null;
-      }
-    };
+    });
   }, [subtitles, mediaUrl]);
 
   const handleLoadedMetadata = useCallback(
@@ -328,18 +327,7 @@ const VideoPlayer = forwardRef(function VideoPlayer(
         onLoadedMetadata={handleLoadedMetadata}
         onLoadedData={handleLoadedMetadata}
         onDurationChange={(event) => onDuration(event.currentTarget.duration)}
-      >
-        {vttUrl ? (
-          <track
-            key={vttUrl}
-            kind="subtitles"
-            src={vttUrl}
-            label={t("videoPlayer.subtitles")}
-            srcLang="unknown"
-            default
-          />
-        ) : null}
-      </video>
+      />
     </div>
   );
 });
