@@ -7,6 +7,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -83,39 +84,24 @@ export default forwardRef(function WaveformVisualizer(
     };
   }, [mediaFile]);
 
-  const regionPlugin = RegionsPlugin.create();
-  Reflect.set(
-    regionPlugin as unknown as Record<string, unknown>,
-    "avoidOverlapping",
-    () => {
-      // Override the private avoidOverlapping helper to allow intersecting regions
-    },
-  );
+  // Memoize plugins so wavesurfer is not destroyed/recreated on every render.
+  // RegionsPlugin is also memoized because useWaveformRegions holds a reference to it.
+  const regionPlugin = useMemo(() => {
+    const plugin = RegionsPlugin.create();
+    Reflect.set(
+      plugin as unknown as Record<string, unknown>,
+      "avoidOverlapping",
+      () => {},
+    );
+    return plugin;
+  }, []);
 
-  /****************************************************************
-   *  Initialize the wavesurfer with options and plugins
-   * */
-  const { wavesurfer } = useWavesurfer({
-    container: containerRef,
-    height: "auto",
-    waveColor,
-    progressColor,
-    cursorColor: "#b91c1c",
-    url: mediaUrl,
-    minPxPerSec: 100,
-    fillParent: true,
-    autoCenter: true,
-    backend: "MediaElement",
-    normalize: true,
-    interact: true,
-    hideScrollbar: false,
-    plugins: [
+  const plugins = useMemo(
+    () => [
       Timeline.create({
         timeInterval: 0.1,
         primaryLabelInterval: 1,
-        style: {
-          fontSize: "12px",
-        },
+        style: { fontSize: "12px" },
       }),
       Hover.create({
         lineColor: "#ff0000",
@@ -127,24 +113,43 @@ export default forwardRef(function WaveformVisualizer(
           const hours = Math.floor(seconds / 3600);
           const minutes = Math.floor((seconds % 3600) / 60);
           const remainingSeconds = seconds % 60;
-          const milliseconds = Math.round(
+          const ms = Math.round(
             (remainingSeconds - Math.floor(remainingSeconds)) * 1000,
           );
-
-          const paddedHours = String(hours).padStart(2, "0");
-          const paddedMinutes = String(minutes).padStart(2, "0");
-          const paddedSeconds = String(Math.floor(remainingSeconds)).padStart(
-            2,
-            "0",
-          );
-          const paddedMilliseconds = String(milliseconds).padStart(3, "0");
-
-          return `${paddedHours}:${paddedMinutes}:${paddedSeconds},${paddedMilliseconds}`;
+          return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(Math.floor(remainingSeconds)).padStart(2, "0")},${String(ms).padStart(3, "0")}`;
         },
       }),
       regionPlugin,
     ],
+    [regionPlugin],
+  );
+
+  /****************************************************************
+   *  Initialize wavesurfer once (no url here — loaded separately
+   *  to avoid destroy/recreate on every URL change).
+   * */
+  const { wavesurfer } = useWavesurfer({
+    container: containerRef,
+    height: "auto",
+    waveColor,
+    progressColor,
+    cursorColor: "#b91c1c",
+    minPxPerSec: 100,
+    fillParent: true,
+    autoCenter: true,
+    backend: "MediaElement",
+    normalize: true,
+    interact: true,
+    hideScrollbar: false,
+    plugins,
   });
+
+  // Load URL via wavesurfer.load() rather than through options so the
+  // instance is not destroyed/recreated (and does not abort) on URL changes.
+  useEffect(() => {
+    if (!wavesurfer || !mediaUrl) return;
+    wavesurfer.load(mediaUrl);
+  }, [wavesurfer, mediaUrl]);
 
   useEffect(() => {
     if (!wavesurfer) return;

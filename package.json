@@ -13,7 +13,8 @@
     "lint": "eslint --max-warnings=0 .",
     "format": "biome format --write .",
     "format:check": "biome check --write=false --linter-enabled=false --formatter-enabled=true .",
-    "test": "tsx --test tests/**/*.test.ts"
+    "test": "tsx --test tests/**/*.test.ts",
+    "build:html": "vite build"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -57,6 +58,7 @@
     "@types/node": "^25.6.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
     "babel-plugin-react-compiler": "^1.0.0",
     "baseline-browser-mapping": "^2.10.19",
     "eslint": "^9.39.4",
@@ -68,6 +70,8 @@
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
+    "vite": "^8.0.11",
+    "vite-plugin-singlefile": "^2.3.3",
     "wrangler": "^4.83.0"
   },
   "overrides": {
